@@ -1,0 +1,100 @@
+import edu.princeton.cs.algs4.In;
+
+public boolean chequeaURLs(String urlInicial, int limite) {
+    
+    Queue<String> fila = new Queue<>();
+    Queue<String> visitados = new Queue<>(); 
+    
+    fila.enqueue(urlInicial);
+
+    int revisadas = 0;
+    boolean todasValidas = true;
+
+    while (!fila.isEmpty() && revisadas < limite) {
+        String actual = fila.dequeue();
+
+        if (yaFueVisitado(visitados, actual)) {
+            continue;
+        }
+        
+        visitados.enqueue(actual);
+        
+        In in = new In(actual);
+        String contenido = "";
+        
+        while (!in.isEmpty()) {
+            contenido += in.readLine();
+        }
+        
+        if (!esXHTMLValido(contenido)) {
+            todasValidas = false;
+        }
+
+        revisadas++;
+
+        extraerLinksManualmente(contenido, fila, visitados);
+    }
+
+    return todasValidas;
+}
+
+private boolean yaFueVisitado(Queue<String> colaVisitados, String urlBuscada) {
+    boolean encontrado = false;
+    Queue<String> temporal = new Queue<>();
+    
+    while (!colaVisitados.isEmpty()) {
+        String actual = colaVisitados.dequeue();
+        
+        if (actual.equals(urlBuscada)) {
+            encontrado = true;
+        }
+        
+        temporal.enqueue(actual);
+    }
+    
+    while (!temporal.isEmpty()) {
+        colaVisitados.enqueue(temporal.dequeue());
+    }
+
+    return encontrado;
+}
+
+private void extraerLinksManualmente(String contenido, Queue<String> fila, Queue<String> visitados) {
+    for (int i = 0; i < contenido.length(); i++) {
+        
+        if (i + 1 < contenido.length() && contenido.charAt(i) == '<' && contenido.charAt(i+1) == 'a') {
+            int j = i;
+            
+            while (j < contenido.length() && contenido.charAt(j) != '>') {
+                
+                if (j + 3 < contenido.length() && 
+                    contenido.charAt(j) == 'h' && contenido.charAt(j+1) == 'r' && 
+                    contenido.charAt(j+2) == 'e' && contenido.charAt(j+3) == 'f') {
+
+                    j += 4;
+                    
+                    while (j < contenido.length() && (contenido.charAt(j) == ' ' || contenido.charAt(j) == '=')) {
+                        j++;
+                    }
+                    
+                    if (j < contenido.length() && (contenido.charAt(j) == '"' || contenido.charAt(j) == '\'')) {
+                        char comilla = contenido.charAt(j);
+                        j++;
+                        
+                        String link = "";
+
+                        while (j < contenido.length() && contenido.charAt(j) != comilla) {
+                            link += contenido.charAt(j);
+                            j++;
+                        }
+
+                        if (!yaFueVisitado(visitados, link)) {
+                            fila.enqueue(link);
+                        }
+                    }
+                }
+                j++;
+            }
+        }
+    }
+}
